@@ -25,14 +25,14 @@ This is an object with the three methods signatures below.
 This is an object with the following method signature.
 - **layout = login_view_builder.build_layout()** This method generates a login screen layout, which must at least have text input elements with ids 'username' and 'password'.
 Example:
->class LoginLayoutBuilder:
->    def build_layout(self, options=None):
->        return [ 
->            html.Label(id='username_label', htmlFor='username', children='Email Address:'),
->            dcc.Input(id='username', type='text'),
->            html.Label(id='password_label', htmlFor='password', children='Password:'),
->            dcc.Input(id='password', type='password')
->        ]
+    class LoginLayoutBuilder:
+        def build_layout(self, options=None):
+            return [ 
+                html.Label(id='username_label', htmlFor='username', children='Email Address:'),
+                dcc.Input(id='username', type='text'),
+                html.Label(id='password_label', htmlFor='password', children='Password:'),
+                dcc.Input(id='password', type='password')
+            ]
 
 ### Content view builder
 
