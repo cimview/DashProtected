@@ -7,11 +7,19 @@ DashProtected is a thin wrapper that adds auth capabilities to Dash applications
 - Login Status (timeout, revocation, etc.)
 DashProtected is a Dash-only solution, and does not require any knowledge of underlying server architecture or HTTP redirects in order to work.  
 
-DashProtected requires a Dash application, an Auth API object that implements the methods described below, objects that can build a login view and a content view, and a top level layout with a main section and a button with id 'loginout'.
+DashProtected requires a Dash application, an Auth API object that implements the methods described below, objects that can build a login view and a content view, and a toplevel layout with a main div, a button with id 'loginout', and api token storage.
 
 ### Dash Application
 
-This is a normal Dash application.
+This is a normal Dash application.  The toplevel layout given to the application should have a main div and a button with id 'loginout'.  Tha main div will contain a login screen when the user is logged out, and will have the application content when the user is logged in.  Example:
+```
+    html.Div([
+                html.Div(id='main', children=children),
+                html.Button(id='loginout', children='Log In/Out'), 
+                dcc.Store(id='current_api_token', storage_type='session', data=NULL_TOKEN),
+                dcc.Store(id='last_api_token', storage_type='session', data=NULL_TOKEN),
+            ])
+```
 
 ### Auth API object
 
@@ -39,7 +47,20 @@ Example:
 ### Content view builder
 
 This is an object with the following method signature.
-- **layout = content_view_builder.build_layout()** This method generates your application layout when logged in, which must also least have elements with ids 'username' and 'password' to keep the callbacks happy; although in the content view they can be dummies.
+- **layout = content_view_builder.build_layout()** This method generates your application layout when logged in, which must also least have elements with ids 'username' and 'password' to keep the callbacks happy; although in this view they can be dummies.
+```
+class ContentLayoutBuilder:
+    def build_layout(self, options=None):    
+        return [
+            dcc.Checklist(id='chk1', options=['One', 'Two', 'Three'], value = 'Two'),
+            html.Button(id = 'reset', children = 'Reset'),
+            dcc.Store(id='username', data='dummy'),
+            dcc.Store(id='password', data='dummy')
+        ]
+```
+
+## Usage
+
 
 
 
