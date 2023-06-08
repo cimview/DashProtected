@@ -6,10 +6,12 @@ DashProtected is a thin wrapper that adds auth capabilities to new or existing D
 - Login/Logout
 - Login Status (timeout, revocation, etc.)
 
-DashProtected is a Dash-only solution, and does not require any knowledge of underlying servers or HTTP redirects in order to work.  All you need to provide are 
+DashProtected is a Dash-only solution, and does not require any knowledge of the underlying server or HTTP protocol in order to work.  All you need to provide are 
 - a Dash application with a layout containing a div with id 'main', a button with id 'loginout', and storage for api tokens
 - an auth API object that implements the methods described below
 - objects that can build a login view and a content view
+
+The application will be protected with a login screen.  If it is also desired for a callback to check the status of a login session for expiry or revocatiom, simply use the callback decorator from the DashProtected instance.  Otherwise, use the callback decorator from the native Dash app.    
 
 ### Dash Application
 
@@ -67,8 +69,26 @@ class ContentLayoutBuilder:
 ## Usage
 
 - Import DashProtected and NULL_TOKEN from the DashProtected module.
-- Create a Dash app as usual, eg- ``` app = Dash(__name__)```
-- Create instances of the LoginViewBuilder 
+- Create a Dash app as usual, eg- ``` app = Dash(__name__)``` with layout as specified above. (Use NULL_TOKEN as the initial API token values.)
+- Create instances of the Auth Api, LoginViewBuilder and ContentViewBuilder
+- Create DashProtected instance with the Dash instance, the Auth Api instance, and view builders.
+- Any callbacks that should check login status should use the dash protected instance callback decorator.  Otherwise use the Dash instance callback decorator as usual.
 
+## Example
 
+A complete example can be found in the examples/DashProtectedExample.py.
+
+## Considerations
+
+DashProtected is a Dash-only auth solution that works by obtaining and storing a token, and by changing the layout in a subsequent callback when the token changes.  The solution can be hardened agaist token spoofing or token replay attacks by taking suitable care that the Auth Api is checking token validity rigorously.  
+
+Advantages that DashProtected has over Basic Auth include the ability to style the login screen and to actually log out without closing the browser window.  
+
+Disadvantages include the addition of more parameters to Dash callbacks, and some constraints (albeit light ones) on the application layout.
+
+## Known Issues
+
+Specific browser gymnastics can sometimes result in username and password text inputs becoming unmoored from the React.js Dash frontend.  The symptoms are that a correct username/password pair is entered but the backend gets empty inputs, and thus a bad login.  The solution is to refresh the login screen and re-enter the username password.
+
+Some callback return values that appear as a list may have items appended to the output instead of the list. The symptom is that a Dash schema exception is thrown on the backend, and the solution is to return embed the calback values into another list.    
 
