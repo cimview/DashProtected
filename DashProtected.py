@@ -1,4 +1,4 @@
-from dash import dcc, html, Input, Output, State
+from dash import dcc, html, Input, Output, State, ctx, no_update
 
 
 NULL_TOKEN = 'null'
@@ -34,7 +34,6 @@ class _CallbackState:
         and previous api tokens.
         '''
         retval = [self.CurrentApiToken, self.LastApiToken]
-        print ('wrap', type(data))
         retval.extend(*data)
         return tuple(retval)
     
@@ -89,48 +88,68 @@ class DashProtected:
         # login and content based on token values
         self.DashApp.callback(
             Output ('main',              'children'), 
+            Output ('user_info_display', 'children'), 
             Input  ('current_api_token', 'data'),
             State  ('last_api_token',    'data'), 
+            State  ('user_info',         'data'), 
             State  ('main',              'children')) (self._show_view) 
 
-        # Sets up a dash callback to handle login and logout.  Prevent initial call is required
+        # Sets up a dash callback to handle login.  Prevent initial call is required
         # to be true because of the allow duplicate
         self.DashApp.callback(
             Output ('current_api_token', 'data', allow_duplicate=True),
             Output ('last_api_token',    'data', allow_duplicate=True),
-            Input  ('loginout',          'n_clicks'),
+            Output ('user_info',         'data', allow_duplicate=True),
+            Input  ('login',             'n_clicks'),
             State  ('current_api_token', 'data'),
             State  ('username',          'value'),
-            State  ('password',          'value'), prevent_initial_call=True) (self._loginout)
+            State  ('password',          'value'), prevent_initial_call=True) (self._login)
+
+        # Sets up a dash callback to handle logout.  Prevent initial call is required
+        # to be true because of the allow duplicate
+        self.DashApp.callback(
+            Output ('current_api_token', 'data', allow_duplicate=True),
+            Output ('last_api_token',    'data', allow_duplicate=True),
+            Output ('user_info',         'data', allow_duplicate=True),
+            Input  ('logout',            'n_clicks'),
+            State  ('current_api_token', 'data'), prevent_initial_call=True) (self._logout)
 
         
-    def _show_view(self, current_api_token, last_api_token, existing_layout):
+    def _show_view(self, current_api_token, last_api_token, user_info, existing_layout):
         ''' 
         Returns either the login or the content view if the token changed; 
         otherwise returns the existing view 
         '''
         if last_api_token == current_api_token:
-            return existing_layout
+            return no_update, no_update
         elif current_api_token == NULL_TOKEN:
-            return self.LoginViewBuilder.build_layout()
+            return self.LoginViewBuilder.build_layout(), NULL_TOKEN
         else:
-            return self.ContentViewBuilder.build_layout()
+            return self.ContentViewBuilder.build_layout(), user_info
 
 
-    def _loginout(self, n, current_api_token, username, password):
+    def _login(self, n, current_api_token, username, password):
+        ''' 
+        Processes the api token in response to login 
+        '''
+        last_api_token = current_api_token
+        new_api_token = self.AuthApi.get_new_token(username, password)
+        user_info = username
+        if new_api_token is None:
+            new_api_token = NULL_TOKEN
+            user_info = NULL_TOKEN
+        return new_api_token, last_api_token, user_info
+
+
+    def _logout(self, n, current_api_token):
         ''' 
         Processes the api token in response to login or logout 
         '''
+        if n is None:  # Protect against spurious invocations not related to clicking the button
+            return no_update, no_update, no_update
         last_api_token = current_api_token
-        if current_api_token == NULL_TOKEN:
-            new_api_token = self.AuthApi.get_new_token(username, password)
-            if new_api_token is None:
-                new_api_token = NULL_TOKEN
-            return new_api_token, last_api_token
-            
-        else:
-            self.AuthApi.invalidate_token(current_api_token)
-            return NULL_TOKEN, last_api_token
+        self.AuthApi.invalidate_token(current_api_token)
+        return NULL_TOKEN, last_api_token, NULL_TOKEN
 
 
     @staticmethod
